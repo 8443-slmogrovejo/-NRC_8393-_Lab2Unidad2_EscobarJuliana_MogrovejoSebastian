@@ -1,0 +1,161 @@
+sqlite3 C:\sqlite\db\DBProgramaAyudaClubesFIFA.db
+.header on
+.mode column
+
+CREATE TABLE FIFA  
+    ( IdFIFA VARCHAR PRIMARY KEY,  
+    NombreFIFA VARCHAR  
+);
+
+CREATE TABLE Persona( 
+    IdP VARCHAR PRIMARY KEY,  
+    NombreP VARCHAR NOT NULL,
+    GeneroP VARCHAR NOT NULL,
+    CorreoP VARCHAR NOT NULL
+);
+
+CREATE TABLE Empleado(
+    IdP VARCHAR PRIMARY KEY,
+    SalarioEm FLOAT NOT NULL,
+    IdFIFA VARCHAR,  
+    CONSTRAINT FkFIFAEm
+    FOREIGN KEY (IdFIFA)  
+    REFERENCES FIFA(IdFIFA),
+    CONSTRAINT FkPersona
+    FOREIGN KEY (IdP)  
+    REFERENCES Persona(IdP)    
+);
+
+CREATE TABLE Directivo(
+    IdP VARCHAR PRIMARY KEY,  
+    RangoD INT NOT NULL,
+    CONSTRAINT FkEmpleado
+    FOREIGN KEY (IdP) REFERENCES Empleado(IdP)
+);
+
+CREATE TABLE AgFinanciero(
+    IdP VARCHAR PRIMARY KEY, 
+    BancoPais VARCHAR NOT NULL,
+    CtaBancariaAF VARCHAR NOT NULL, 
+    CONSTRAINT FkEmpleado
+    FOREIGN KEY (IdP)  
+    REFERENCES Empleado(IdP)
+);
+
+CREATE TABLE Usuario(
+    IdP VARCHAR PRIMARY KEY,  
+    ClaveAcceso VARCHAR NOT NULL,
+    CONSTRAINT FkEmpleado
+    FOREIGN KEY (IdP)  
+    REFERENCES Empleado(IdP)
+);
+
+CREATE TABLE Confederacion(
+    IdConf VARCHAR NOT NULL,  
+    NombreConf VARCHAR NOT NULL,   
+    IdFIFA VARCHAR NOT NULL,  
+    CONSTRAINT FkFIFA PRIMARY KEY (IdConf,IdFIFA), 
+    FOREIGN KEY (IdFIFA) REFERENCES FIFA(IdFIFA)  
+);
+
+CREATE TABLE Club(
+    IdClub VARCHAR NOT NULL,  
+    NombreClub VARCHAR NOT NULL,   
+    CtaBancariaClub VARCHAR NOT NULL,
+    IdConf VARCHAR NOT NULL,
+    IdFIFA VARCHAR NOT NULL,
+    CONSTRAINT FkFIFAConf PRIMARY KEY (IdClub,IdConf,IdFIFA),  
+    FOREIGN KEY (IdFIFA) REFERENCES Confederacion(IdFIFA),  
+    FOREIGN KEY (IdConf) REFERENCES Confederacion(IdConf)  
+);
+
+CREATE TABLE Parametro(
+    IdParam VARCHAR PRIMARY KEY,  
+    NombrePa VARCHAR NOT NULL,   
+    EstadoPa VARCHAR NOT NULL,
+    DescripPa VARCHAR NOT NULL
+);
+
+CREATE TABLE Mundial(
+    IdMundial VARCHAR PRIMARY KEY,  
+    FechaInicio VARCHAR NOT NULL,   
+    FechaFin VARCHAR NOT NULL
+);
+
+CREATE TABLE Continente(  
+    IdContin VARCHAR NOT NULL,
+    NombreContin VARCHAR NOT NULL,   
+    AsistenciaC VARCHAR NOT NULL, 
+    IdMundial VARCHAR NOT NULL,
+    CONSTRAINT FkMundial PRIMARY KEY (IdContin,IdMundial),
+    FOREIGN KEY (IdMundial) REFERENCES Mundial(IdMundial)
+);
+
+CREATE TABLE Pais(
+    IdPais VARCHAR NOT NULL,  
+    NombrePais VARCHAR NOT NULL,   
+    AsistenciaPais VARCHAR NOT NULL, 
+    IdContin VARCHAR NOT NULL,  
+    IdMundial VARCHAR NOT NULL,  
+    CONSTRAINT FkMundialConti PRIMARY KEY (IdPais,IdContin,IdMundial),
+    FOREIGN KEY (IdMundial) REFERENCES Continente(IdMundial),
+    FOREIGN KEY (IdContin) REFERENCES Continente(IdContin)  
+);
+
+CREATE TABLE Seleccion(
+    IdSeleccion VARCHAR NOT NULL,  
+    NombreSeleccion VARCHAR NOT NULL,
+    IdPais VARCHAR NOT NULL,
+    IdContin VARCHAR NOT NULL,  
+    IdMundial VARCHAR NOT NULL,  
+    CONSTRAINT FkMundialContiPais  PRIMARY KEY (IdSeleccion,IdMundial),
+    FOREIGN KEY (IdMundial) REFERENCES Pais(IdMundial),
+    FOREIGN KEY (IdContin) REFERENCES Pais(IdContin),  
+    FOREIGN KEY (IdPais) REFERENCES Pais(IdPais)  
+);
+
+CREATE TABLE JugConvocado(
+    IdP VARCHAR NOT NULL,  
+    IdSeleccion VARCHAR NOT NULL,
+    IdMundial VARCHAR NOT NULL,   
+    DiasMundialJC INT NOT NULL, 
+    CONSTRAINT FkMundialSelecIdP PRIMARY KEY (IdMundial,IdSeleccion,IdP),
+    FOREIGN KEY (IdMundial) REFERENCES Seleccion(IdMundial),
+    FOREIGN KEY (IdSeleccion) REFERENCES Seleccion(IdSeleccion),
+    FOREIGN KEY (IdP) REFERENCES Persona(IdP)
+);
+
+CREATE TABLE ClubJugador(
+    IdClub VARCHAR NOT NULL,
+    IdP VARCHAR NOT NULL,
+    IdSeleccion VARCHAR NOT NULL,
+    IdConf VARCHAR NOT NULL,
+    IdParam VARCHAR NOT NULL,  
+    CONSTRAINT FkClubJugador PRIMARY KEY (IdConf,IdParam,IdP,IdClub,IdSeleccion),
+    FOREIGN KEY (IdConf) REFERENCES Club(IdConf),  
+    FOREIGN KEY (IdParam) REFERENCES Parametro(IdParam),
+    FOREIGN KEY (IdP) REFERENCES JugConvocado(IdP),
+    FOREIGN KEY (IdClub) REFERENCES Club(IdClub),
+    FOREIGN KEY (IdSeleccion) REFERENCES JugConvocado(IdSeleccion)
+);
+
+.mode csv
+.import C:\\sqlite\\db\\csv\\dataset_Personas.csv Persona
+.import C:\\sqlite\\db\\csv\\dataset_FIFA.csv FIFA
+.import C:\\sqlite\\db\\csv\\dataset_Confederaciones.csv Confederacion
+.import C:\\sqlite\\db\\csv\\dataset_Club.csv Club
+.import C:\\sqlite\\db\\csv\\dataset_Empleados.csv Empleado
+.import C:\\sqlite\\db\\csv\\dataset_AgentesFinanciero.csv AgFinanciero
+.import C:\\sqlite\\db\\csv\\dataset_Directivos.csv Directivo
+.import C:\\sqlite\\db\\csv\\dataset_Usuarios.csv Usuario
+.import C:\\sqlite\\db\\csv\\dataset_Continentes.csv Continente
+.import C:\\sqlite\\db\\csv\\dataset_Paises.csv Pais
+.import C:\\sqlite\\db\\csv\\dataset_Seleccion.csv Seleccion
+.import C:\\sqlite\\db\\csv\\dataset_JugadorConvocado.csv JugConvocado
+.import C:\\sqlite\\db\\csv\\dataset_Mundial.csv Mundial
+.import C:\\sqlite\\db\\csv\\dataset_Parametros.csv Parametro
+.import C:\\sqlite\\db\\csv\\dataset_ClubJugador.csv ClubJugador
+
+select Persona.NombreP,Persona.GeneroP,JugConvocado.DiasMundialJC from JugConvocado inner join Persona on JugConvocado.IdP = Persona.IdP;
+
+select Confederacion.NombreConf, Persona.NombreP from ((ClubJugador inner join Confederacion on ClubJugador.IdConf = Confederacion.IdConf) inner join Persona on ClubJugador.IdP = Persona.IdP) order by Confederacion.NombreConf ASC;
